@@ -1,0 +1,423 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model crime_record {
+  id                         Int       @id @default(autoincrement())
+  municipality               String    @db.VarChar(100)
+  barangay                   String?   @db.VarChar(100)
+  date_reported              DateTime? @db.Date
+  time_reported              DateTime? @db.Time(6)
+  date_committed             DateTime? @db.Date
+  time_committed             DateTime? @db.Time(6)
+  stages_of_felony           String?   @db.VarChar(100)
+  offense                    String?   @db.VarChar(500)
+  crime_category             String?   @db.VarChar(100)
+  modus                      String?
+  victims_status             String?   @db.VarChar(100)
+  victims_age                Int?
+  victims_gender             String?   @db.VarChar(20)
+  victims_occupation         String?   @db.VarChar(100)
+  victims_nationality        String?   @db.VarChar(50)
+  victims_sector             String?   @db.VarChar(100)
+  victims_ethnic_group       String?   @db.VarChar(100)
+  victims_count              Int?
+  suspects_status            String?   @db.VarChar(100)
+  suspects_age               Int?
+  suspects_gender            String?   @db.VarChar(20)
+  suspects_occupation        String?   @db.VarChar(100)
+  suspects_nationality       String?   @db.VarChar(50)
+  suspects_education         String?   @db.VarChar(100)
+  suspects_drug_used         String?   @db.VarChar(50)
+  suspects_alcohol_used      String?   @db.VarChar(50)
+  suspects_group_affiliation String?   @db.VarChar(200)
+  suspects_count             Int?
+  weapons_used               String?   @db.VarChar(200)
+  vehicle_used               String?   @db.VarChar(200)
+  firearms_used              String?   @db.VarChar(200)
+  case_status                String?   @db.VarChar(100)
+  case_progress              String?   @db.VarChar(200)
+  latitude                   Float?
+  longitude                  Float?
+  created_at                 DateTime? @db.Timestamp(6)
+  created_by                 Int
+  data_source                String?   @db.VarChar(50)
+  offense_category           String?   @db.VarChar(255)
+  keywords                   String?
+  index_group                String?   @db.VarChar(10)
+  index_type                 String?   @db.VarChar(50)
+  user                       user      @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model data_source {
+  id           Int       @id @default(autoincrement())
+  dimension_id Int
+  name         String    @db.VarChar(200)
+  description  String?
+  contact_info String?   @db.VarChar(500)
+  created_at   DateTime? @db.Timestamp(6)
+  dimension    dimension @relation(fields: [dimension_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  dataset      dataset[]
+}
+
+model data_upload {
+  id               Int       @id @default(autoincrement())
+  dataset_id       Int
+  file_name        String    @db.VarChar(255)
+  uploaded_by      Int
+  upload_date      DateTime? @db.Timestamp(6)
+  municipality     String?   @db.VarChar(100)
+  barangay         String?   @db.VarChar(100)
+  status           String?   @db.VarChar(20)
+  records_imported Int?
+  error_message    String?
+  dataset          dataset   @relation(fields: [dataset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user             user      @relation(fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model dataset {
+  id                   Int                    @id @default(autoincrement())
+  data_source_id       Int
+  name                 String                 @db.VarChar(200)
+  description          String?
+  table_name           String                 @db.VarChar(100)
+  is_active            Boolean?
+  created_at           DateTime?              @db.Timestamp(6)
+  data_upload          data_upload[]
+  data_source          data_source            @relation(fields: [data_source_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  death_records        death_records[]
+  electric_consumption electric_consumption[]
+  energy_consumption   energy_consumption[]
+  mbda_incidents       mbda_incidents[]
+  pnp_ciras_records    pnp_ciras_records[]
+}
+
+model death_records {
+  id                  Int       @id @default(autoincrement())
+  municipality        String    @db.VarChar(100)
+  barangay            String?   @db.VarChar(100)
+  death_date          DateTime? @db.Date
+  registration_date   DateTime? @db.Date
+  age                 Int?
+  gender              String?   @db.VarChar(20)
+  civil_status        String?   @db.VarChar(50)
+  occupation          String?   @db.VarChar(100)
+  cause_of_death      String?   @db.VarChar(500)
+  manner_of_death     String?   @db.VarChar(100)
+  place_of_death      String?   @db.VarChar(200)
+  attending_physician String?   @db.VarChar(200)
+  disease_category    String?   @db.VarChar(200)
+  icd_code            String?   @db.VarChar(20)
+  created_at          DateTime? @db.Timestamp(6)
+  created_by          Int
+  dataset_id          Int
+  user                user      @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  dataset             dataset   @relation(fields: [dataset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model dimension {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique @db.VarChar(100)
+  description String?
+  created_at  DateTime?     @db.Timestamp(6)
+  data_source data_source[]
+}
+
+model electric_consumption {
+  id                Int       @id @default(autoincrement())
+  municipality      String    @db.VarChar(100)
+  barangay          String?   @db.VarChar(100)
+  billing_period    String?   @db.VarChar(20)
+  billing_date      DateTime? @db.Date
+  customer_type     String?   @db.VarChar(50)
+  meter_number      String?   @db.VarChar(50)
+  account_number    String?   @db.VarChar(50)
+  kwh_consumed      Float?
+  billing_amount    Float?
+  previous_reading  Float?
+  current_reading   Float?
+  rate_class        String?   @db.VarChar(50)
+  service_voltage   String?   @db.VarChar(20)
+  connection_status String?   @db.VarChar(50)
+  service_address   String?   @db.VarChar(500)
+  latitude          Float?
+  longitude         Float?
+  created_at        DateTime? @db.Timestamp(6)
+  created_by        Int
+  dataset_id        Int
+  user              user      @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  dataset           dataset   @relation(fields: [dataset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model electric_consumptions {
+  id                  Int       @id @default(autoincrement())
+  created_at          DateTime? @default(now()) @db.Timestamp(6)
+  created_by          Int?      @default(1)
+  dataset_id          Int?
+  acctno              String?
+  monthly_consumption String?
+  account_type        String?
+  route_code          String?
+  barangay            String?
+  municipality        String?
+}
+
+model energy_consumption {
+  id                  Int       @id @default(autoincrement())
+  customer_id         String    @db.VarChar(20)
+  municipality        String    @db.VarChar(100)
+  barangay            String    @db.VarChar(200)
+  monthly_consumption Float
+  account_type        String    @db.VarChar(50)
+  route_code          Int
+  billing_period      String?   @db.VarChar(20)
+  billing_date        DateTime? @db.Date
+  created_at          DateTime? @db.Timestamp(6)
+  created_by          Int
+  dataset_id          Int
+  user                user      @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  dataset             dataset   @relation(fields: [dataset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model mbda_incidents {
+  id                   Int       @id @default(autoincrement())
+  municipality         String    @db.VarChar(100)
+  barangay             String?   @db.VarChar(100)
+  incident_date        DateTime? @db.Date
+  incident_time        DateTime? @db.Time(6)
+  incident_type        String?   @db.VarChar(200)
+  month                String?   @db.VarChar(20)
+  involved_vehicles    String?
+  num_motorcycles      Int?
+  num_tricycles        Int?
+  num_puv              Int?
+  num_private_vehicles Int?
+  num_trucks           Int?
+  num_reported_injured Int?
+  hospital             String?   @db.VarChar(200)
+  casualty_names       String?
+  classification       String?   @db.VarChar(100)
+  cause_of_incident    String?
+  facts                String?
+  caller               String?   @db.VarChar(200)
+  source               String?   @db.VarChar(100)
+  response_time        Int?
+  description          String?
+  exact_location       String?   @db.VarChar(500)
+  latitude             Float?
+  longitude            Float?
+  responder_name       String?   @db.VarChar(200)
+  responder_unit       String?   @db.VarChar(200)
+  created_at           DateTime? @db.Timestamp(6)
+  created_by           Int
+  dataset_id           Int
+  user                 user      @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  dataset              dataset   @relation(fields: [dataset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model metric {
+  id           Int       @id @default(autoincrement())
+  municipality String    @db.VarChar(100)
+  barangay     String?   @db.VarChar(100)
+  metric_type  String    @db.VarChar(50)
+  year         Int
+  value        Float
+  source       String?   @db.VarChar(200)
+  created_at   DateTime? @db.Timestamp(6)
+  created_by   Int
+  user         user      @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model peace_and_order {
+  id                         Int                        @id @default(autoincrement())
+  category_id                Int
+  original_table             String                     @db.VarChar(50)
+  original_id                Int
+  municipality               String                     @db.VarChar(100)
+  barangay                   String?                    @db.VarChar(100)
+  location                   String?
+  district                   String?                    @db.VarChar(255)
+  incident_date              DateTime?                  @db.Date
+  incident_time              DateTime?                  @db.Time(6)
+  reported_date              DateTime?                  @db.Date
+  reported_time              DateTime?                  @db.Time(6)
+  incident_type              String?                    @db.VarChar(500)
+  incident_category          String?                    @db.VarChar(255)
+  incident_description       String?
+  keywords                   String?
+  victims_count              Int?
+  victims_age                Int?
+  victims_gender             String?                    @db.VarChar(20)
+  victims_occupation         String?                    @db.VarChar(100)
+  victims_nationality        String?                    @db.VarChar(50)
+  victims_status             String?                    @db.VarChar(100)
+  victims_sector             String?                    @db.VarChar(100)
+  victims_ethnic_group       String?                    @db.VarChar(100)
+  suspects_count             Int?
+  suspects_age               Int?
+  suspects_gender            String?                    @db.VarChar(20)
+  suspects_occupation        String?                    @db.VarChar(100)
+  suspects_nationality       String?                    @db.VarChar(50)
+  suspects_status            String?                    @db.VarChar(100)
+  suspects_education         String?                    @db.VarChar(100)
+  suspects_drug_used         String?                    @db.VarChar(50)
+  suspects_alcohol_used      String?                    @db.VarChar(50)
+  suspects_group_affiliation String?                    @db.VarChar(200)
+  stages_of_felony           String?                    @db.VarChar(100)
+  crime_category             String?                    @db.VarChar(100)
+  weapons_used               String?                    @db.VarChar(200)
+  firearms_used              String?                    @db.VarChar(200)
+  case_status                String?                    @db.VarChar(100)
+  case_progress              String?                    @db.VarChar(200)
+  vehicles_involved          String?
+  vehicle_counts             String?                    @db.VarChar(255)
+  vehicle_used               String?                    @db.VarChar(200)
+  lanes_affected             String?
+  lanes_update               String?
+  team                       String?
+  toc_patrol                 String?                    @db.VarChar(255)
+  delta_1                    String?                    @db.VarChar(255)
+  tl                         String?                    @db.VarChar(255)
+  atl                        String?                    @db.VarChar(255)
+  roadwork_update            String?
+  stranded_vehicle_report    String?
+  accident_report            String?
+  status_update              String?
+  sector                     String?                    @db.VarChar(255)
+  response_time              Int?
+  latitude                   Float?
+  longitude                  Float?
+  images                     String?                    @db.VarChar(500)
+  created_at                 DateTime?                  @db.Timestamp(6)
+  updated_at                 DateTime?                  @db.Timestamp(6)
+  created_by                 Int
+  data_source                String?                    @db.VarChar(50)
+  peace_and_order_categories peace_and_order_categories @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user                       user                       @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model peace_and_order_categories {
+  id              Int               @id @default(autoincrement())
+  code            String            @unique @db.VarChar(10)
+  name            String            @db.VarChar(200)
+  description     String?
+  created_at      DateTime?         @db.Timestamp(6)
+  peace_and_order peace_and_order[]
+}
+
+model pnp_ciras_records {
+  id                         Int       @id @default(autoincrement())
+  municipality               String    @db.VarChar(100)
+  barangay                   String?   @db.VarChar(100)
+  date_reported              DateTime? @db.Date
+  time_reported              DateTime? @db.Time(6)
+  date_committed             DateTime? @db.Date
+  time_committed             DateTime? @db.Time(6)
+  stages_of_felony           String?   @db.VarChar(100)
+  offense                    String?   @db.VarChar(200)
+  crime_category             String?   @db.VarChar(100)
+  modus                      String?
+  victims_status             String?   @db.VarChar(100)
+  victims_age                Int?
+  victims_gender             String?   @db.VarChar(20)
+  victims_occupation         String?   @db.VarChar(100)
+  victims_nationality        String?   @db.VarChar(50)
+  victims_sector             String?   @db.VarChar(100)
+  victims_ethnic_group       String?   @db.VarChar(100)
+  victims_count              Int?
+  suspects_status            String?   @db.VarChar(100)
+  suspects_age               Int?
+  suspects_gender            String?   @db.VarChar(20)
+  suspects_occupation        String?   @db.VarChar(100)
+  suspects_nationality       String?   @db.VarChar(50)
+  suspects_education         String?   @db.VarChar(100)
+  suspects_drug_used         String?   @db.VarChar(50)
+  suspects_alcohol_used      String?   @db.VarChar(50)
+  suspects_group_affiliation String?   @db.VarChar(200)
+  suspects_count             Int?
+  weapons_used               String?   @db.VarChar(200)
+  vehicle_used               String?   @db.VarChar(200)
+  firearms_used              String?   @db.VarChar(200)
+  case_status                String?   @db.VarChar(100)
+  case_progress              String?   @db.VarChar(200)
+  latitude                   Float?
+  longitude                  Float?
+  created_at                 DateTime? @db.Timestamp(6)
+  created_by                 Int
+  dataset_id                 Int?
+  user                       user      @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  dataset                    dataset?  @relation(fields: [dataset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model raw_upload {
+  id               Int       @id @default(autoincrement())
+  file_name        String    @db.VarChar(255)
+  uploaded_by      Int
+  upload_date      DateTime? @db.Timestamp(6)
+  metric_type      String    @db.VarChar(50)
+  municipality     String    @db.VarChar(100)
+  barangay         String?   @db.VarChar(100)
+  status           String?   @db.VarChar(20)
+  records_imported Int?
+  user             user      @relation(fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model traffic_incidents {
+  id                      Int       @id @default(autoincrement())
+  date                    DateTime? @db.Date
+  time                    String?   @db.VarChar(255)
+  type                    String?   @db.VarChar(255)
+  classification          String?   @db.VarChar(255)
+  location                String?
+  municipality            String?   @db.VarChar(255)
+  district                String?   @db.VarChar(255)
+  barangay                String?   @db.VarChar(255)
+  vehicles_involved       String?
+  vehicle_counts          String?   @default(dbgenerated("0")) @db.VarChar(255)
+  narratives              String?
+  sector                  String?   @db.VarChar(255)
+  status_update           String?
+  lanes_update            String?
+  lanes_affected          String?
+  team                    String?
+  toc_patrol              String?   @db.VarChar(255)
+  delta_1                 String?   @db.VarChar(255)
+  tl                      String?   @db.VarChar(255)
+  atl                     String?   @db.VarChar(255)
+  roadwork_update         String?
+  stranded_vehicle_report String?
+  accident_report         String?
+  created_at              DateTime? @default(now()) @db.Timestamp(6)
+  updated_at              DateTime? @default(now()) @db.Timestamp(6)
+  images                  String?   @db.VarChar(500)
+  response_time           Int?
+  latitude                Float?
+  longitude               Float?
+
+  @@index([municipality, district], map: "idx_traffic_incidents_location")
+}
+
+model user {
+  id                   Int                    @id @default(autoincrement())
+  username             String                 @unique @db.VarChar(64)
+  password_hash        String                 @db.VarChar(256)
+  municipality         String                 @db.VarChar(100)
+  role                 String                 @db.VarChar(20)
+  created_at           DateTime?              @db.Timestamp(6)
+  crime_record         crime_record[]
+  data_upload          data_upload[]
+  death_records        death_records[]
+  electric_consumption electric_consumption[]
+  energy_consumption   energy_consumption[]
+  mbda_incidents       mbda_incidents[]
+  metric               metric[]
+  peace_and_order      peace_and_order[]
+  pnp_ciras_records    pnp_ciras_records[]
+  raw_upload           raw_upload[]
+}
