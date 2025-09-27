@@ -1,5 +1,5 @@
 "use client"
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { useEffect } from 'react'
@@ -34,6 +34,10 @@ export default function Map({ points }: { points: Point[] }) {
             </Popup>
           </Marker>
         ))}
+        {/* Density circles as a quick heatmap visual */}
+        {clusterByMunicipality(valid).map(({ name, lat, lng, count }) => (
+          <CircleMarker key={name} center={[lat, lng]} radius={Math.max(6, Math.min(24, count))} pathOptions={{ color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.3 }} />
+        ))}
       </MapContainer>
     </div>
   )
@@ -54,6 +58,16 @@ function ResizeHandler({ points }: { points: Required<Point>[] }) {
     return () => { clearTimeout(id); window.removeEventListener('resize', fix) }
   }, [map, points])
   return null
+}
+
+function clusterByMunicipality(points: Required<Point>[]) {
+  const centerByName: Record<string, { lat: number; lng: number; count: number }> = {}
+  for (const p of points) {
+    const name = p.municipality?.name || 'Unknown'
+    if (!centerByName[name]) centerByName[name] = { lat: p.latitude, lng: p.longitude, count: 0 }
+    centerByName[name].count += 1
+  }
+  return Object.entries(centerByName).map(([name, v]) => ({ name, ...v }))
 }
 
 

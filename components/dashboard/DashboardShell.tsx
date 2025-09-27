@@ -134,29 +134,33 @@ export default function DashboardShell() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div className="card p-0 overflow-hidden">
           <div className="card-header">Vehicle Analysis</div>
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie data={data?.vehicles ?? []} dataKey="count" nameKey="name" innerRadius={60} outerRadius={100} paddingAngle={3}>
-                  {(data?.vehicles ?? []).map((_: any, i: number) => (
-                    <Cell key={i} fill={["#ef4444", "#0ea5e9", "#22c55e", "#a855f7", "#f59e0b", "#14b8a6", "#3b82f6"][i % 7]} />
-                  ))}
-                </Pie>
-                <Legend />
-                <RTooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="text-sm">
-              <table className="w-full border text-left">
-                <thead className="bg-slate-100">
-                  <tr><th className="p-2">Vehicle Type</th><th className="p-2">Count</th></tr>
-                </thead>
-                <tbody>
-                  {(data?.vehicles ?? []).map((v: any) => (
-                    <tr key={v.id} className="border-t"><td className="p-2">{v.name}</td><td className="p-2">{v.count}</td></tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="p-4 grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
+            <div className="col-span-1 lg:col-span-1">
+              <ResponsiveContainer width="100%" height={240}>
+                <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+                  <Pie data={data?.vehicles ?? []} dataKey="count" nameKey="name" innerRadius={70} outerRadius={100} paddingAngle={2} stroke="#fff" strokeWidth={2}>
+                    {(data?.vehicles ?? []).map((_: any, i: number) => (
+                      <Cell key={i} fill={["#ef4444", "#0ea5e9", "#22c55e", "#a855f7", "#f59e0b", "#14b8a6", "#3b82f6"][i % 7]} />
+                    ))}
+                  </Pie>
+                  <Legend verticalAlign="bottom" layout="horizontal" wrapperStyle={{ fontSize: 12 }} />
+                  <RTooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="col-span-1 lg:col-span-2">
+              <div className="overflow-auto max-h-[260px]">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-100 sticky top-0">
+                    <tr><th className="p-2 text-left">Vehicle Type</th><th className="p-2 text-left">Count</th></tr>
+                  </thead>
+                  <tbody>
+                    {(data?.vehicles ?? []).map((v: any) => (
+                      <tr key={v.id} className="border-t"><td className="p-2">{v.name}</td><td className="p-2">{v.count}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
