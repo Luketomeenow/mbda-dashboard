@@ -64,7 +64,7 @@ function clusterByMunicipality(points: Required<Point>[]) {
   const centerByName: Record<string, { lat: number; lng: number; count: number }> = {}
   for (const p of points) {
     const name = p.municipality?.name || 'Unknown'
-    if (!centerByName[name]) centerByName[name] = { lat: p.latitude, lng: p.longitude, count: 0 }
+    if (!centerByName[name]) centerByName[name] = { lat: p.latitude as number, lng: p.longitude as number, count: 0 }
     centerByName[name].count += 1
   }
   return Object.entries(centerByName).map(([name, v]) => ({ name, ...v }))
