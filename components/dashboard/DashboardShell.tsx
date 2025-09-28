@@ -189,32 +189,37 @@ export default function DashboardShell() {
         </div>
         <div className="card p-0 overflow-hidden">
           <div className="card-header">Incident Density Heatmap</div>
-          <div className="p-6 text-sm">
-            <table className="w-full border text-left">
-              <thead className="bg-slate-100">
-                <tr><th className="p-2">Municipality</th><th className="p-2">Aug 2025</th></tr>
-              </thead>
-              <tbody>
-                {(() => {
-                  const monthKey = (s: string) => s
-                  const counts: Record<string, number> = {}
-                  ;(data?.points ?? []).forEach((p: any) => {
-                    if (!p.municipality?.name || !p.occurredAt) return
-                    const month = new Date(p.occurredAt).toISOString().slice(0,7)
-                    if (month !== (data?.trends?.slice(-1)?.[0]?.month ?? month)) return
-                    const key = p.municipality.name
-                    counts[key] = (counts[key] ?? 0) + 1
-                  })
-                  const rows = Object.entries(counts).sort((a,b)=> b[1]-a[1])
-                  return rows.map(([name, count]) => (
-                    <tr key={name} className="border-t">
-                      <td className="p-2">{name}</td>
-                      <td className="p-2 font-semibold">{count}</td>
-                    </tr>
-                  ))
-                })()}
-              </tbody>
-            </table>
+          <div className="p-6">
+            {(data?.heatmap ?? []).length > 0 && (
+              <div className="grid gap-8">
+                {/* Legend */}
+                <div className="flex items-center gap-3 text-xs text-slate-600">
+                  <span>Low</span>
+                  {[1,3,6,9,12].map((v) => (
+                    <div key={v} className="h-4 w-6 border border-white/50" style={{ backgroundColor: colorForCount(v) }} />
+                  ))}
+                  <span>High</span>
+                </div>
+                {data.heatmap.map((block: any) => {
+                  const top = [...block.rows].sort((a: any, b: any) => b.count - a.count).slice(0, 12)
+                  return (
+                    <div key={block.month}>
+                      <div className="text-sm mb-3 font-medium">{block.month}</div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-12 gap-4">
+                        {top.map((r: any, idx: number) => (
+                          <div key={idx} className="flex flex-col items-center" title={`${r.municipality}: ${r.count}`}>
+                            <div className="w-full aspect-square rounded-md flex items-center justify-center text-[11px] font-semibold shadow-sm" style={{ backgroundColor: colorForCount(r.count), color: r.count > 6 ? 'white' : '#0b1020' }}>
+                              {r.count}
+                            </div>
+                            <div className="mt-1 text-[11px] text-center text-slate-700 truncate w-full" title={r.municipality}>{r.municipality}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -223,5 +228,15 @@ export default function DashboardShell() {
 }
 
 const DynamicMap = dynamic(() => import('./Map').then(m => m.default), { ssr: false })
+
+function colorForCount(c: number) {
+  // simple red scale
+  if (c >= 12) return '#991b1b'
+  if (c >= 9) return '#b91c1c'
+  if (c >= 6) return '#dc2626'
+  if (c >= 3) return '#ef4444'
+  if (c >= 1) return '#f87171'
+  return '#fee2e2'
+}
 
 

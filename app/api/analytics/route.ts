@@ -109,6 +109,21 @@ export async function GET(request: Request) {
     })(),
   }
 
+  // Build a small heatmap matrix: latest 4 months x all municipalities
+  const monthKeys = Array.from(new Set((monthly as any[]).map((m: any) => m.month))).slice(-4)
+  const muniList = municipalityData.map((m: any) => m.name)
+  const heatmap: { month: string; rows: { municipality: string; count: number }[] }[] = []
+  for (const m of monthKeys) {
+    const monthStart = new Date(m + '-01')
+    const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1)
+    const rows: { municipality: string; count: number }[] = []
+    for (const name of muniList) {
+      const count = await prisma.traffic_incidents.count({ where: { ...(where || {}), municipality: { equals: name, mode: 'insensitive' }, date: { gte: monthStart, lt: monthEnd } } })
+      rows.push({ municipality: name, count })
+    }
+    heatmap.push({ month: m, rows })
+  }
+
   return NextResponse.json({
     totals: { incidents: incidentsCount, today: todayCount },
     filters,
@@ -117,6 +132,7 @@ export async function GET(request: Request) {
     vehicles,
     trends: monthly,
     points: points.map((p: any) => ({ id: p.id, latitude: p.latitude, longitude: p.longitude, municipality: { name: p.municipality }, classification: { name: p.classification }, occurredAt: p.date })),
+    heatmap,
   })
 }
 
