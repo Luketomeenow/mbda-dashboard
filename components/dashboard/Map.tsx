@@ -1,5 +1,5 @@
 "use client"
-import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker } from 'react-leaflet'
+import { MapContainer, TileLayer, Popup, useMap, CircleMarker } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { useEffect } from 'react'
@@ -24,7 +24,12 @@ export default function Map({ points }: { points: Point[] }) {
         <ResizeHandler points={valid} />
         <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         {valid.map(p => (
-          <Marker key={p.id} position={[p.latitude as number, p.longitude as number]} icon={icon}>
+          <CircleMarker
+            key={p.id}
+            center={[p.latitude as number, p.longitude as number]}
+            radius={6}
+            pathOptions={{ color: colorForClass(p.classification?.name), fillColor: colorForClass(p.classification?.name), fillOpacity: 0.85 }}
+          >
             <Popup>
               <div className="text-sm">
                 <div className="font-semibold">{p.classification?.name ?? 'Incident'}</div>
@@ -32,11 +37,7 @@ export default function Map({ points }: { points: Point[] }) {
                 <div className="text-slate-500">{new Date(p.occurredAt).toLocaleString()}</div>
               </div>
             </Popup>
-          </Marker>
-        ))}
-        {/* Density circles as a quick heatmap visual */}
-        {clusterByMunicipality(valid).map(({ name, lat, lng, count }) => (
-          <CircleMarker key={name} center={[lat, lng]} radius={Math.max(6, Math.min(24, count))} pathOptions={{ color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.3 }} />
+          </CircleMarker>
         ))}
       </MapContainer>
     </div>
@@ -68,6 +69,15 @@ function clusterByMunicipality(points: Required<Point>[]) {
     centerByName[name].count += 1
   }
   return Object.entries(centerByName).map(([name, v]) => ({ name, ...v }))
+}
+
+function colorForClass(name?: string) {
+  const key = (name ?? '').toUpperCase()
+  if (key.includes('MINOR')) return '#22c55e'
+  if (key.includes('MODERATE')) return '#f59e0b'
+  if (key.includes('MAJOR')) return '#ef4444'
+  // fallback cycle
+  return '#3b82f6'
 }
 
 
