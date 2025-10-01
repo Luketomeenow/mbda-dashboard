@@ -1,5 +1,5 @@
 "use client"
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 
 type Filters = {
@@ -22,6 +22,51 @@ export default function RecordsTable({ initialFilters }: { initialFilters: Filte
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState<Filters>(initialFilters)
   const { data, isLoading } = useQuery({ queryKey: ['records', page, filters], queryFn: () => fetchRecords({ page, pageSize: 20, ...filters }) })
+
+  const queryClient = useQueryClient()
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [editId, setEditId] = useState<number | null>(null)
+  const [editValues, setEditValues] = useState<any>({})
+
+  function openEdit(r: any) {
+    setEditId(r.id)
+    setEditValues({
+      date: r.date ? new Date(r.date).toISOString().slice(0,10) : '',
+      time: r.time ?? '',
+      municipality: r.municipality ?? '',
+      classification: r.classification ?? '',
+      type: r.type ?? '',
+      location: r.location ?? '',
+      vehicles_involved: r.vehicles_involved ?? ''
+    })
+    setIsEditOpen(true)
+  }
+
+  function setField(key: string, value: any) {
+    setEditValues((prev: any) => ({ ...prev, [key]: value }))
+  }
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, values }: { id: number; values: any }) => {
+      const res = await fetch(`/api/records/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values)
+      })
+      if (!res.ok) throw new Error('Failed to update record')
+      return res.json()
+    },
+    onSuccess: () => {
+      setIsEditOpen(false)
+      setEditId(null)
+      queryClient.invalidateQueries({ queryKey: ['records'] })
+    }
+  })
+
+  function handleSave() {
+    if (editId == null) return
+    updateMutation.mutate({ id: editId, values: editValues })
+  }
 
   const paramsForExport = useMemo(() => {
     const sp = new URLSearchParams()
@@ -57,11 +102,12 @@ export default function RecordsTable({ initialFilters }: { initialFilters: Filte
                 <th className="p-2 text-left">Type</th>
                 <th className="p-2 text-left">Location</th>
                 <th className="p-2 text-left">Vehicles</th>
+                <th className="p-2 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td className="p-4" colSpan={6}>Loading…</td></tr>
+                <tr><td className="p-4" colSpan={7}>Loading…</td></tr>
               ) : (data?.rows ?? []).map((r: any) => (
                 <tr key={r.id} className="border-t">
                   <td className="p-2">{r.date ? new Date(r.date).toLocaleDateString() : ''} {r.time ?? ''}</td>
@@ -70,10 +116,13 @@ export default function RecordsTable({ initialFilters }: { initialFilters: Filte
                   <td className="p-2">{r.type}</td>
                   <td className="p-2">{r.location}</td>
                   <td className="p-2">{r.vehicles_involved}</td>
+                  <td className="p-2">
+                    <button className="px-2 py-1 border rounded-md" onClick={() => openEdit(r)}>Edit</button>
+                  </td>
                 </tr>
               ))}
               {(!isLoading && (data?.rows ?? []).length === 0) && (
-                <tr><td colSpan={6} className="p-4 text-slate-500">No records found.</td></tr>
+                <tr><td colSpan={7} className="p-4 text-slate-500">No records found.</td></tr>
               )}
             </tbody>
           </table>
@@ -86,6 +135,50 @@ export default function RecordsTable({ initialFilters }: { initialFilters: Filte
           </div>
         </div>
       </div>
+      {isEditOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-lg font-semibold">Edit Record</div>
+              <button className="text-slate-600" onClick={() => setIsEditOpen(false)}>✕</button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1">
+                <span className="text-sm text-slate-600">Date</span>
+                <input type="date" className="rounded-md border border-slate-300 px-3 py-2" value={editValues.date ?? ''} onChange={(e)=> setField('date', e.target.value)} />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-sm text-slate-600">Time</span>
+                <input type="time" className="rounded-md border border-slate-300 px-3 py-2" value={editValues.time ?? ''} onChange={(e)=> setField('time', e.target.value)} />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-sm text-slate-600">Municipality</span>
+                <input className="rounded-md border border-slate-300 px-3 py-2" value={editValues.municipality ?? ''} onChange={(e)=> setField('municipality', e.target.value)} />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-sm text-slate-600">Classification</span>
+                <input className="rounded-md border border-slate-300 px-3 py-2" value={editValues.classification ?? ''} onChange={(e)=> setField('classification', e.target.value)} />
+              </label>
+              <label className="flex flex-col gap-1 md:col-span-2">
+                <span className="text-sm text-slate-600">Type</span>
+                <input className="rounded-md border border-slate-300 px-3 py-2" value={editValues.type ?? ''} onChange={(e)=> setField('type', e.target.value)} />
+              </label>
+              <label className="flex flex-col gap-1 md:col-span-2">
+                <span className="text-sm text-slate-600">Location</span>
+                <input className="rounded-md border border-slate-300 px-3 py-2" value={editValues.location ?? ''} onChange={(e)=> setField('location', e.target.value)} />
+              </label>
+              <label className="flex flex-col gap-1 md:col-span-2">
+                <span className="text-sm text-slate-600">Vehicles Involved</span>
+                <input className="rounded-md border border-slate-300 px-3 py-2" value={editValues.vehicles_involved ?? ''} onChange={(e)=> setField('vehicles_involved', e.target.value)} />
+              </label>
+            </div>
+            <div className="flex items-center justify-end gap-2 mt-4">
+              <button className="px-3 py-1 border rounded-md" onClick={() => setIsEditOpen(false)} disabled={updateMutation.isLoading}>Cancel</button>
+              <button className="px-3 py-1 rounded-md bg-brand-600 text-white disabled:opacity-50" onClick={handleSave} disabled={updateMutation.isLoading}>{updateMutation.isLoading ? 'Saving…' : 'Save'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
